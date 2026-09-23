@@ -14,6 +14,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 
 INSTALLED_APPS = [
+    'home',
     'users',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -101,7 +102,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATICFILES_DIRS = [
+    BASE_DIR / 'home' / 'templates' / 'static',
+]
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

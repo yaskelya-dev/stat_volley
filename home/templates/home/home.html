@@ -1,0 +1,27 @@
+{% extends 'home/base.html' %}
+
+{% block title %}StatVolley{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-body-tertiary rounded-3 border">
+    <div class="container-fluid py-3">
+        <h1 class="display-5 fw-bold">Добро пожаловать в StatVolley!</h1>
+        <p class="col-md-8 fs-4">Приложение для ведения волейбольной статистики. В верхнем меню вы можете выбрать режим статистики</p>
+    </div>
+</div>
+
+<div class="row align-items-md-stretch g-4">
+    <div class="col-md-6">
+        <div class="h-100 p-4 bg-body-tertiary border rounded-3">
+            <h2>Ведение счёта</h2>
+            <p>Ведение счета и расчет количества забитых мячей игроками. Учитываются атаки, блоки, подачи и ошибки</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="h-100 p-4 bg-body-tertiary border rounded-3">
+            <h2>Подробная статистика</h2>
+            <p>Расчёт каждого игрового действия, подробная статистика каждого розыгрыша</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
