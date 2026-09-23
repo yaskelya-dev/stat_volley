@@ -10,7 +10,11 @@ DEBUG = config.DEBUG
 ALLOWED_HOSTS = config.ALLOWED_HOSTS
 
 
+AUTH_USER_MODEL = 'users.CustomUser'
+
+
 INSTALLED_APPS = [
+    'users',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
