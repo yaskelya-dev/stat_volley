@@ -1,0 +1,11 @@
+{% extends 'home/base.html' %}
+
+{% block title %}Статистика - StatVolley{% endblock %}
+
+{% block content %}
+<div class="p-4 bg-body-tertiary rounded-3 border">
+    <h2>Ведение счёта</h2>
+    <p class="lead">Добро пожаловать, <strong>{{ request.user.username }}</strong>!</p>
+    <p>В данной статистике учитываются только забитые мячи</p>
+</div>
+{% endblock %}

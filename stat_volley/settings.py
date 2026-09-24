@@ -4,18 +4,20 @@ from .config import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 SECRET_KEY = config.SECRET_KEY
 DEBUG = config.DEBUG
 ALLOWED_HOSTS = config.ALLOWED_HOSTS
 
-
 AUTH_USER_MODEL = 'users.CustomUser'
 
+LOGIN_URL = 'users:login'          # Куда отправлять незалогиненных пользователей
+LOGIN_REDIRECT_URL = 'score:index' # Куда отправлять после успешного входа
+LOGOUT_REDIRECT_URL = 'users:login'# Куда отправлять после выхода
 
 INSTALLED_APPS = [
     'home',
     'users',
+    'score',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

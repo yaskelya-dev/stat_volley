@@ -19,7 +19,7 @@
         <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
             <div class="container-fluid">
                 <!-- Логотип слева -->
-                <a class="navbar-brand fw-bold text-primary" href="{% url 'home' %}">
+                <a class="navbar-brand fw-bold text-primary" href="{% url 'home:home' %}">
                     StatVolley
                 </a>
 
@@ -33,29 +33,50 @@
                     <!-- Ссылка навигации слева (при необходимости) -->
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Счёт</a>
+                            <a class="nav-link active" aria-current="page" href="{% url 'score:index' %}">Счёт</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Статистика</a>
+                            <a class="nav-link active" aria-current="page" href="{% url 'home:home' %}">Статистика</a>
                         </li>
                     </ul>
 
-                    <!-- Блок кнопок справа -->
                     <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
                         <!-- Кнопка смены темы -->
                         <button class="btn btn-outline-secondary" id="themeToggler" type="button" aria-label="Сменить тему">
                             <i class="bi bi-sun-fill" id="themeIcon"></i>
                         </button>
 
-                        <!-- Кнопка входа -->
-                        <a href="#" class="btn btn-primary">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Войти
-                        </a>
+                        {% if user.is_authenticated %}
+                            <span class="me-2 text-muted"><i class="bi bi-person-circle me-1"></i>{{ user.username }}</span>
+                            <a href="{% url 'users:logout' %}" class="btn btn-outline-danger">
+                                <i class="bi bi-box-arrow-right me-1"></i>Выйти
+                            </a>
+                        {% else %}
+                            <a href="{% url 'users:login' %}" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Войти
+                            </a>
+                        {% endif %}
                     </div>
+
                 </div>
             </div>
         </nav>
     </header>
+
+    {% if messages %}
+    <div class="messages-container my-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}primary{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Основной контент страницы -->
     <main class="container py-4 flex-grow-1">
