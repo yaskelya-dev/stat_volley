@@ -1,6 +1,7 @@
 from pathlib import Path
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from .allowed import ALLOWED_HOSTS
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -8,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     SECRET_KEY: str
     DEBUG: bool = False
-    ALLOWED_HOSTS: list[str] = ["*"]
+    ALLOWED_HOSTS: list[str] = ALLOWED_HOSTS
 
     # Database
     DB_NAME: str

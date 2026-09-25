@@ -6,4 +6,6 @@ __pycache__/
 *.so
 
 .env
+.env~
 backup_data.json
+stat_volley/allowed.py
