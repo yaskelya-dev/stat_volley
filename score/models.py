@@ -1,50 +1,36 @@
 from django.db import models
-from stat_volley import settings
 from players.models import Player
+from stat_volley import settings
+from teams.models import Team
 
 
-class Team(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Название")
-    owner = models.ForeignKey(
+class Friendship(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Ожидает подтверждения"
+        ACCEPTED = "ACCEPTED", "Принято"
+
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="teams",
-        verbose_name="Владелец"
+        related_name="friendships_initiated",
     )
-    players = models.ManyToManyField(
-        Player,
-        through="TeamPlayer",
-        related_name="teams",
-        verbose_name="Состав команды"
+    friend = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="friendships_received",
     )
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.ACCEPTED
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Команда"
-        verbose_name_plural = "Команды"
+        verbose_name = "Дружба"
+        verbose_name_plural = "Дружба"
+        unique_together = ("user", "friend")
 
     def __str__(self):
-        return self.name
-
-
-class TeamPlayer(models.Model):
-    """ Связь команда - игрок и указание номера """
-    team = models.ForeignKey(
-        Team, on_delete=models.CASCADE, related_name="team_players"
-    )
-    player = models.ForeignKey(
-        Player, on_delete=models.CASCADE, related_name="team_players"
-    )
-    number = models.PositiveSmallIntegerField(
-        verbose_name="Игровой номер в команде"
-    )
-
-    class Meta:
-        verbose_name = "Игрок в команде"
-        verbose_name_plural = "Составы команд"
-        unique_together = (("team", "player"), ("team", "number"))
-
-    def __str__(self):
-        return f"#{self.number} {self.player.name} ({self.team.name})"
+        return f"{self.user} -> {self.friend} ({self.status})"
 
 
 class Match(models.Model):

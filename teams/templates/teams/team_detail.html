@@ -1,0 +1,68 @@
+{% extends 'home/base.html' %}
+
+{% block title %}{{ team.name }} - StatVolley{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'teams:list' %}" class="btn btn-outline-secondary btn-sm">&larr; Назад к командам</a>
+</div>
+
+<div class="p-4 bg-body-tertiary rounded-3 border mb-4">
+    <h2>Команда: {{ team.name }}</h2>
+    <p class="text-muted mb-0">Тренер/Владелец: <strong>{{ team.owner.username }}</strong></p>
+</div>
+
+<div class="row g-4">
+    <!-- Форма добавления существующего игрока в команду -->
+    <div class="col-md-5">
+        <div class="p-4 bg-body-tertiary rounded-3 border">
+            <h4>Добавить игрока в состав</h4>
+            <form method="post" class="mt-3">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ add_player_form.player.label_tag }}
+                    {{ add_player_form.player }}
+                </div>
+                <div class="mb-3">
+                    {{ add_player_form.number.label_tag }}
+                    {{ add_player_form.number }}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Добавить в состав</button>
+            </form>
+            <hr>
+            <small class="text-muted">
+                Не нашли нужного игрока? Сначала <a href="{% url 'players:list' %}">создайте его в глобальной базе игроков</a>.
+            </small>
+        </div>
+    </div>
+
+    <!-- Состав команды (Список игроков с номерами) -->
+    <div class="col-md-7">
+        <div class="p-4 bg-body-tertiary rounded-3 border">
+            <h4>Текущий состав ({{ team_players|length }})</h4>
+            {% if team_players %}
+                <div class="table-responsive mt-3">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 80px;">№</th>
+                                <th>Имя и Фамилия игрока</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tp in team_players %}
+                                <tr>
+                                    <td><span class="badge bg-primary fs-6">#{{ tp.number }}</span></td>
+                                    <td><strong>{{ tp.player.name }}</strong></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mt-3">В составе этой команды пока нет игроков.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

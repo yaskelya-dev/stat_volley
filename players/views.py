@@ -14,7 +14,7 @@ def player_list_create(request):
             player = form.save(commit=False)
             player.created_by = request.user
             player.save()
-            return redirect("players:player_list")
+            return redirect("players:list")
     else:
         form = PlayerForm()
 

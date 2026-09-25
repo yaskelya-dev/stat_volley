@@ -18,6 +18,8 @@ INSTALLED_APPS = [
     'home',
     'users',
     'score',
+    'teams',
+    'players',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
