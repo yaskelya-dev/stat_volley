@@ -16,7 +16,7 @@ def team_list_create(request):
             team = form.save(commit=False)
             team.owner = request.user
             team.save()
-            return redirect("teams:team_detail", team_id=team.id)
+            return redirect("teams:detail", team_id=team.id)
     else:
         form = TeamForm()
 
