@@ -9,3 +9,4 @@ __pycache__/
 .env~
 backup_data.json
 stat_volley/allowed.py
+staticfiles/
