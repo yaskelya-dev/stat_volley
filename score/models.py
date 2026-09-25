@@ -88,6 +88,12 @@ class StatAspect(models.Model):
 
 class StatGrade(models.Model):
     """Справочник оценок (#, +, !, -, =) для конкретного действия"""
+
+    class PointEffect(models.IntegerChoices):
+        OPPONENT = -1, "Очко сопернику"
+        NONE = 0, "Без очка (мяч в игре)"
+        OUR = 1, "Очко нашей команде"
+
     aspect = models.ForeignKey(
         StatAspect,
         on_delete=models.CASCADE,
@@ -101,13 +107,19 @@ class StatGrade(models.Model):
     default_weight = models.FloatField(
         default=1.0, verbose_name="Вес по умолчанию (например, 0.5)"
     )
+    # добавил эффект на счёт
+    point_effect = models.IntegerField(
+        choices=PointEffect.choices,
+        default=PointEffect.NONE,
+        verbose_name="Влияние на счёт",
+    )
 
     class Meta:
         verbose_name = "Критерий оценки"
         verbose_name_plural = "Критерии оценок"
 
     def __str__(self):
-        return f"{self.aspect.name} [{self.symbol}]"
+        return f"{self.aspect.name} [{self.symbol}] ({self.point_effect:+d})"
 
 
 class MatchEvent(models.Model):
@@ -141,6 +153,23 @@ class MatchEvent(models.Model):
         verbose_name = "Событие матча"
         verbose_name_plural = "События матчей"
         ordering = ["created_at"]
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+
+        if is_new and self.grade:
+            # Перемножаем эффект оценки на вес действия
+            points = self.grade.point_effect * self.weight
+
+            if points > 0:
+                self.set.home_score += points
+                self.set.save(update_fields=["home_score"])
+            elif points < 0:
+                # abs() убирает минус, чтобы прибавить очко сопернику
+                self.set.away_score += abs(points)
+                self.set.save(update_fields=["away_score"])
+
 
     def __str__(self):
         player_str = self.player.name if self.player else "Соперник"
