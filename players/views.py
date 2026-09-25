@@ -1,10 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+
+from users.decorators import login_required_message
 from .forms import PlayerForm
 from .models import Player
 
 
-@login_required
+@login_required_message(redirect_after_login='players:list')
 def player_list_create(request):
     if request.method == "POST":
         form = PlayerForm(request.POST)

@@ -11,10 +11,10 @@ class PlayerForm(forms.ModelForm):
             "name": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "Имя и Фамилия игрока",
+                    "placeholder": "Крылов Виталий Николаевич",
                 }
             ),
         }
         labels = {
-            "name": "Имя и Фамилия игрока",
+            "name": "ФИО игрока",
         }
