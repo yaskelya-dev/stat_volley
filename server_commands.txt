@@ -11,3 +11,5 @@ docker compose restart web
 docker compose exec web python manage.py migrate
 
 docker compose exec web python manage.py createsuperuser
+
+docker compose exec web python manage.py loaddata backup_data.json
