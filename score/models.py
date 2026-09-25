@@ -74,7 +74,7 @@ class Set(models.Model):
 class StatAspect(models.Model):
     """Справочник действий (приём, подача, атака...)"""
     code = models.CharField(
-        max_length=30, unique=True, verbose_name="Уникальный код"
+        max_length=30, unique=True, verbose_name="Уникальное название: ATTACK, BLOCK"
     )
     name = models.CharField(max_length=50, verbose_name="Название действия")
 
