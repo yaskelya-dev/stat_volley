@@ -43,7 +43,7 @@ class Match(models.Model):
     opponent = models.CharField(
         max_length=100, verbose_name="Название соперника"
     )
-    date = models.DateTimeField(auto_now_add=True, verbose_name="Дата проведения")
+    date = models.DateTimeField(verbose_name="Дата проведения")
 
     class Meta:
         verbose_name = "Матч"
@@ -54,15 +54,52 @@ class Match(models.Model):
 
 
 class Set(models.Model):
+    class ServingTeam(models.TextChoices):
+        HOME = "HOME", "Мы"
+        AWAY = "AWAY", "Соперник"
+
+    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="sets", verbose_name="Матч")
+    set_number = models.PositiveSmallIntegerField(verbose_name="Номер партии")
     home_score = models.FloatField(default=0.0, verbose_name="Очки наши")
     away_score = models.FloatField(default=0.0, verbose_name="Очки противника")
-    match = models.ForeignKey(
-        Match,
-        on_delete=models.CASCADE,
-        related_name="sets",
-        verbose_name="Матч",
+    serving_team = models.CharField(
+        max_length=10,
+        choices=ServingTeam.choices,
+        default=ServingTeam.HOME,
+        verbose_name="Подающая команда",
     )
-    set_number = models.PositiveSmallIntegerField(verbose_name="Номер партии")
+    is_finished = models.BooleanField(
+        default=False,
+        verbose_name="Партия завершена"
+    )
+
+    p1 = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True,
+                           related_name="set_p1", verbose_name="Зона 1 (подача)")
+    p2 = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True,
+                           related_name="set_p2", verbose_name="Зона 2")
+    p3 = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True,
+                           related_name="set_p3", verbose_name="Зона 3")
+    p4 = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True,
+                           related_name="set_p4", verbose_name="Зона 4")
+    p5 = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True,
+                           related_name="set_p5", verbose_name="Зона 5")
+    p6 = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True,
+                           related_name="set_p6", verbose_name="Зона 6")
+
+    def is_lineup_complete(self):
+        """Проверка, расставлены ли все 6 игроков"""
+        return all([self.p1, self.p2, self.p3, self.p4, self.p5, self.p6])
+
+    def rotate(self):
+        """Ротация игроков по часовой стрелке: 1<-2<-3<-4<-5<-6<-1"""
+        old_p1 = self.p1
+        self.p1 = self.p2
+        self.p2 = self.p3
+        self.p3 = self.p4
+        self.p4 = self.p5
+        self.p5 = self.p6
+        self.p6 = old_p1
+        self.save()
 
     class Meta:
         verbose_name = "Партия"
@@ -115,6 +152,10 @@ class StatGrade(models.Model):
         default=PointEffect.NONE,
         verbose_name="Влияние на счёт",
     )
+    is_simple = models.BooleanField(
+        default=False,
+        verbose_name="Относится к простой статистике"
+    )
 
     class Meta:
         verbose_name = "Критерий оценки"
@@ -156,21 +197,29 @@ class MatchEvent(models.Model):
         verbose_name_plural = "События матчей"
         ordering = ["created_at"]
 
+
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
         if is_new and self.grade:
-            # Перемножаем эффект оценки на вес действия
             points = self.grade.point_effect * self.weight
+            current_set = self.set
 
             if points > 0:
-                self.set.home_score += points
-                self.set.save(update_fields=["home_score"])
+                current_set.home_score += points
+                # ЛОГИКА ПЕРЕХОДА:
+                # Если подавал соперник, а выиграли мы — мяч переходит нам (ПЕРЕХОД!)
+                if current_set.serving_team == Set.ServingTeam.AWAY:
+                    current_set.serving_team = Set.ServingTeam.HOME
+
             elif points < 0:
-                # abs() убирает минус, чтобы прибавить очко сопернику
-                self.set.away_score += abs(points)
-                self.set.save(update_fields=["away_score"])
+                current_set.away_score += abs(points)
+                # Если подавали мы, а очко забил соперник — подача уходит им
+                if current_set.serving_team == Set.ServingTeam.HOME:
+                    current_set.serving_team = Set.ServingTeam.AWAY
+
+            current_set.save()
 
 
     def __str__(self):

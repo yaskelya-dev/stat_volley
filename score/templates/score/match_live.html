@@ -1,0 +1,281 @@
+{% extends 'home/base.html' %}
+
+{% block title %}Матч: {{ match.team.name }} vs {{ match.opponent }}{% endblock %}
+
+{% block content %}
+<style>
+    /* Стиль волейбольной площадки */
+    .volleyball-court {
+        background-color: #e07a5f;
+        border: 4px solid #f4f1de;
+        border-radius: 8px;
+        padding: 10px;
+        max-width: 500px;
+        margin: 0 auto;
+        position: relative;
+    }
+    .net-line {
+        border-top: 4px dashed #3d405b;
+        margin-bottom: 10px;
+        text-align: center;
+        color: #3d405b;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    .court-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+    .player-node {
+        aspect-ratio: 1;
+        background-color: #f4f1de;
+        border: 2px solid #3d405b;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .player-node:hover {
+        transform: scale(1.05);
+        background-color: #f2cc8f;
+    }
+    .player-node.empty {
+        border: 2px dashed #8d99ae;
+        background-color: rgba(255, 255, 255, 0.4);
+    }
+    .server-badge {
+        font-size: 0.7rem;
+        background: #e63946;
+        color: white;
+        padding: 2px 5px;
+        border-radius: 4px;
+    }
+</style>
+
+<div class="container py-3">
+
+    <!-- ТАБЛО СЧЁТА -->
+    <div class="card text-center mb-3 shadow-sm border-2">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fs-5 fw-bold text-primary">{{ match.team.name }}</span>
+                <div>
+                    <span class="display-4 fw-bold">{{ current_set.home_score|floatformat:0 }}</span>
+                    <span class="display-4 fw-bold mx-2">:</span>
+                    <span class="display-4 fw-bold">{{ current_set.away_score|floatformat:0 }}</span>
+                </div>
+                <span class="fs-5 fw-bold text-danger">{{ match.opponent }}</span>
+            </div>
+
+            <div class="mt-2 d-flex justify-content-center align-items-center gap-2">
+                <span class="badge bg-secondary">Партия {{ current_set.set_number }}</span>
+                <span class="badge {% if current_set.serving_team == 'HOME' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                    Подача: {% if current_set.serving_team == 'HOME' %}{{ match.team.name }}{% else %}{{ match.opponent }}{% endif %}
+                </span>
+                <!-- Кнопка ручного изменения счета -->
+                <button class="btn btn-sm btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#editScoreModal">✏️ Изменить счёт</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ИНДИКАТОР РАССТАНОВКИ -->
+    {% if not current_set.is_lineup_complete %}
+        <div class="alert alert-info text-center">
+            <strong>Расставьте игроков на площадку!</strong> Нажмите на пустые кружки, чтобы выбрать игрока для каждой зоны.
+        </div>
+    {% endif %}
+
+    <!-- ВОЛЕЙБОЛЬНАЯ ПЛОЩАДКА (НАША СТОРОНА) -->
+    <div class="volleyball-court shadow">
+        <div class="net-line">СЕТКА</div>
+
+        <div class="court-grid">
+            <!-- Передняя линия (Зоны 4, 3, 2) -->
+            {% include "score/includes/zone_node.html" with zone_code="p4" zone_name="Зона 4" player=current_set.p4 %}
+            {% include "score/includes/zone_node.html" with zone_code="p3" zone_name="Зона 3" player=current_set.p3 %}
+            {% include "score/includes/zone_node.html" with zone_code="p2" zone_name="Зона 2" player=current_set.p2 %}
+
+            <!-- Задняя линия (Зоны 5, 6, 1) -->
+            {% include "score/includes/zone_node.html" with zone_code="p5" zone_name="Зона 5" player=current_set.p5 %}
+            {% include "score/includes/zone_node.html" with zone_code="p6" zone_name="Зона 6" player=current_set.p6 %}
+            {% include "score/includes/zone_node.html" with zone_code="p1" zone_name="Зона 1" player=current_set.p1 is_server=True %}
+        </div>
+    </div>
+
+    <!-- КНОПКА ДЕЙСТВИЯ СОПЕРНИКА -->
+    {% if current_set.is_lineup_complete %}
+        <div class="text-center mt-3">
+            <button class="btn btn-outline-danger w-100 max-w-500" data-bs-toggle="modal" data-bs-target="#opponentActionModal">
+                ➕ Добавить очко / ошибку соперника (без нашего игрока)
+            </button>
+        </div>
+    {% endif %}
+
+    <!-- ЛОГ ДЕЙСТВИЙ -->
+    <div class="mt-4">
+        <h5>История партий</h5>
+        <ul class="list-group list-group-flush">
+            {% for event in events %}
+                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-1">
+                    <small>
+                        {% if event.player %}<strong>#{{ event.player.number }} {{ event.player.name }}</strong>{% else %}Соперник{% endif %}
+                        — {{ event.grade.aspect.name }} ({{ event.grade.symbol }})
+                    </small>
+                    <span class="badge {% if event.grade.point_effect > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if event.grade.point_effect > 0 %}+1 Нам{% else %}+1 Им{% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<!-- ================= МОДАЛЬНЫЕ ОКНА ================= -->
+
+<!-- 1. Модалка выбора игрока в зону -->
+<div class="modal fade" id="selectPlayerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" class="modal-content">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="set_position">
+            <input type="hidden" name="zone" id="modalZoneInput">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="selectPlayerModalTitle">Выбор игрока</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group">
+                    {% for p in available_players %}
+                        <button type="submit" name="player_id" value="{{ p.id }}" class="list-group-item list-group-item-action">
+                            <strong>#{{ p.number }}</strong> {{ p.name }}
+                        </button>
+                    {% empty %}
+                        <p class="text-muted">Все доступные игроки уже расставлены.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 2. Модалка действия игрока (Появляется при клике на игрока во время игры) -->
+<div class="modal fade" id="actionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" class="modal-content">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="add_event">
+            <input type="hidden" name="player_id" id="actionPlayerId">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalTitle">Действие игрока</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2">
+                    {% for grade in simple_grades %}
+                        <div class="col-6">
+                            <button type="submit" name="grade_id" value="{{ grade.id }}"
+                                    class="btn {% if grade.point_effect > 0 %}btn-outline-success{% else %}btn-outline-danger{% endif %} w-100 p-3">
+                                <strong>{{ grade.aspect.name }}</strong><br>
+                                <small>[{{ grade.symbol }}] {{ grade.description }}</small>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 3. Модалка действий соперника -->
+<div class="modal fade" id="opponentActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" class="modal-content">
+            {% csrf_token %}
+            <input type="hidden" name="action_type" value="add_event">
+            <!-- player_id отправляется пустым -->
+            <div class="modal-header">
+                <h5 class="modal-title">Результат розыгрыша (Соперник)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-grid gap-2">
+                    {% for grade in simple_grades %}
+                        <button type="submit" name="grade_id" value="{{ grade.id }}"
+                                class="btn {% if grade.point_effect > 0 %}btn-outline-success{% else %}btn-outline-danger{% endif %} p-2">
+                            {{ grade.aspect.name }} ({{ grade.description }})
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 4. Модалка редактирования счёта / Завершения партии -->
+<div class="modal fade" id="editScoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action_type" value="update_score">
+                <div class="modal-header">
+                    <h5 class="modal-title">Коррекция счёта</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">{{ match.team.name }}</label>
+                            <input type="number" step="0.5" name="home_score" class="form-control" value="{{ current_set.home_score }}">
+                        </div>
+                        <div class="col">
+                            <label class="form-label">{{ match.opponent }}</label>
+                            <input type="number" step="0.5" name="away_score" class="form-control" value="{{ current_set.away_score }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Подающая команда</label>
+                        <select name="serving_team" class="form-select">
+                            <option value="HOME" {% if current_set.serving_team == 'HOME' %}selected{% endif %}>{{ match.team.name }}</option>
+                            <option value="AWAY" {% if current_set.serving_team == 'AWAY' %}selected{% endif %}>{{ match.opponent }}</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Сохранить изменения</button>
+                </form>
+
+                <hr>
+
+                <!-- Завершение партии -->
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action_type" value="finish_set">
+                    <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Завершить эту партию и начать новую?')">
+                        🏁 Завершить партию №{{ current_set.set_number }} и начать следующую
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Передача параметров в модальные окна при клике на элемент
+function openSelectPlayerModal(zoneCode, zoneName) {
+    document.getElementById('modalZoneInput').value = zoneCode;
+    document.getElementById('selectPlayerModalTitle').innerText = 'Назначить в ' + zoneName;
+    new bootstrap.Modal(document.getElementById('selectPlayerModal')).show();
+}
+
+function openActionModal(playerId, playerName) {
+    document.getElementById('actionPlayerId').value = playerId;
+    document.getElementById('actionModalTitle').innerText = 'Действие: ' + playerName;
+    new bootstrap.Modal(document.getElementById('actionModal')).show();
+}
+</script>
+{% endblock %}

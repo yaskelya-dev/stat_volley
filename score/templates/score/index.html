@@ -7,5 +7,9 @@
     <h2>Ведение счёта</h2>
     <p class="lead">Добро пожаловать, <strong>{{ request.user.username }}</strong>!</p>
     <p>В данной статистике учитываются только забитые мячи</p>
+
+    <a href="{% url 'score:match_create' %}">Создать матч</a>
+
 </div>
+
 {% endblock %}
