@@ -54,6 +54,8 @@ class Match(models.Model):
 
 
 class Set(models.Model):
+    home_score = models.FloatField(default=0.0, verbose_name="Очки наши")
+    away_score = models.FloatField(default=0.0, verbose_name="Очки противника")
     match = models.ForeignKey(
         Match,
         on_delete=models.CASCADE,
