@@ -1,9 +1,11 @@
+from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 
 from players.models import Player
 from score.forms import MatchCreateForm
 from score.models import Set, Match, StatGrade, MatchEvent
+from teams.models import Team, TeamPlayer
 from users.decorators import login_required_message
 
 
@@ -32,81 +34,65 @@ def match_create(request):
 
 
 def match_live(request, match_id):
-    match = get_object_or_404(Match, id=match_id)
+    match = get_object_or_404(Match, pk=match_id)
 
-    # Берем последнюю незавершенную партию, либо создаем 1-ю
-    current_set = match.sets.filter(is_finished=False).last()
-    if not current_set:
-        last_finished = match.sets.filter(is_finished=True).last()
-        next_num = (last_finished.set_number + 1) if last_finished else 1
-        current_set = Set.objects.create(match=match, set_number=next_num)
+    # 1. Находим или создаем 1-ю партию с базовыми значениями (счет 0:0, подача по умолчанию у соперника)
+    current_set, created = Set.objects.get_or_create(
+        match=match,
+        set_number=1,
+        defaults={
+            'serving_team': getattr(Set.ServingTeam, 'AWAY', 'AWAY'),
+            'home_score': 0,
+            'away_score': 0,
+        }
+    )
 
-    all_team_players = match.team.players.all()
-
-    # Список игроков, которые ЕЩЁ НЕ на площадке
-    placed_player_ids = [
-        p.id for p in [current_set.p1, current_set.p2, current_set.p3, current_set.p4, current_set.p5, current_set.p6]
-        if p
-    ]
-    available_players = all_team_players.exclude(id__in=placed_player_ids)
-
-    # Действия только из простой статистики
-    simple_grades = StatGrade.objects.filter(is_simple=True).select_related('aspect')
-
+    # 2. Сохранение расстановки и подачи
     if request.method == "POST":
-        action_type = request.POST.get("action_type")
+        # Сохраняем игроков
+        current_set.p1_id = request.POST.get("p1") or None
+        current_set.p2_id = request.POST.get("p2") or None
+        current_set.p3_id = request.POST.get("p3") or None
+        current_set.p4_id = request.POST.get("p4") or None
+        current_set.p5_id = request.POST.get("p5") or None
+        current_set.p6_id = request.POST.get("p6") or None
 
-        # 1. Расстановка игроков
-        if action_type == "set_position":
-            zone = request.POST.get("zone")
-            player_id = request.POST.get("player_id")
-            player = get_object_or_404(Player, id=player_id) if player_id else None
+        # Сохраняем, кто начинает подавать
+        serving_team = request.POST.get("serving_team")
+        if serving_team:
+            current_set.serving_team = serving_team
 
-            if zone in ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']:
-                setattr(current_set, zone, player)
-                current_set.save()
+        current_set.save()
 
-        # 2. Запись действия в матче
-        elif action_type == "add_event":
-            grade_id = request.POST.get("grade_id")
-            player_id = request.POST.get("player_id")  # может быть None, если очко соперника
-
-            grade = get_object_or_404(StatGrade, id=grade_id)
-            player = Player.objects.filter(id=player_id).first() if player_id else None
-
-            # Фиксируем, кто подавал ДО этого розыгрыша
-            was_away_serving = (current_set.serving_team == Set.ServingTeam.AWAY)
-
-            MatchEvent.objects.create(
-                set=current_set,
-                player=player,
-                grade=grade,
-                weight=1.0
-            )
-
-            # Изменение счета
-            current_set.save()
-
-        # 3. Ручное редактирование счёта и подающей команды
-        elif action_type == "update_score":
-            current_set.home_score = float(request.POST.get("home_score", 0))
-            current_set.away_score = float(request.POST.get("away_score", 0))
-            current_set.serving_team = request.POST.get("serving_team", Set.ServingTeam.HOME)
-            current_set.save()
-
-        # 4. Завершение партии и переход к новой
-        elif action_type == "finish_set":
-            current_set.is_finished = True
-            current_set.save()
-            Set.objects.create(match=match, set_number=current_set.set_number + 1)
-
+        messages.success(request, "Стартовый состав и первая подача сохранены!")
         return redirect("score:match_live", match_id=match.id)
+
+    # 3. Формируем словарь текущих игроков на площадке
+    players = {
+        "p1": current_set.p1,
+        "p2": current_set.p2,
+        "p3": current_set.p3,
+        "p4": current_set.p4,
+        "p5": current_set.p5,
+        "p6": current_set.p6,
+    }
+
+    # 4. Получаем список ID игроков, уже стоящих на площадке
+    assigned_player_ids = [
+        player.id for player in players.values() if player is not None
+    ]
+
+    # 5. Получаем список игроков команды, которые ЕЩЁ не в поле
+    available_players = TeamPlayer.objects.filter(
+        team=match.team
+    ).exclude(
+        player_id__in=assigned_player_ids
+    ).select_related("player")
 
     context = {
         "match": match,
-        "current_set": current_set,
+        "set": current_set,
+        "players": players,
         "available_players": available_players,
-        "simple_grades": simple_grades,
-        "events": current_set.events.select_related("player", "grade__aspect").order_by("-created_at")[:10],
     }
     return render(request, "score/match_live.html", context)
