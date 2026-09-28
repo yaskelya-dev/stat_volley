@@ -3,13 +3,31 @@
 {% block title %}{{ team.name }} - StatVolley{% endblock %}
 
 {% block content %}
+<!-- CSS для автопоиска -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+
 <div class="mb-3">
     <a href="{% url 'teams:list' %}" class="btn btn-outline-secondary btn-sm">&larr; Назад к командам</a>
 </div>
 
-<div class="p-4 bg-body-tertiary rounded-3 border mb-4">
-    <h2>Команда: {{ team.name }}</h2>
-    <p class="text-muted mb-0">Тренер/Владелец: <strong>{{ team.owner.username }}</strong></p>
+<div class="p-4 bg-body-tertiary rounded-3 border mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h2 class="mb-1">Команда: {{ team.name }}</h2>
+        <p class="text-muted mb-0">Тренер/Владелец: <strong>{{ team.owner.username }}</strong></p>
+    </div>
+    {% if team.owner == request.user %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'teams:update' team.id %}" class="btn btn-outline-primary btn-sm">
+                Изменить название
+            </a>
+            <form action="{% url 'teams:delete' team.id %}" method="post" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите удалить команду &quot;{{ team.name|escapejs }}&quot;?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    Удалить команду
+                </button>
+            </form>
+        </div>
+    {% endif %}
 </div>
 
 <div class="row g-4">
@@ -17,18 +35,22 @@
     <div class="col-md-5">
         <div class="p-4 bg-body-tertiary rounded-3 border">
             <h4>Добавить игрока в состав</h4>
-            <form method="post" class="mt-3">
-                {% csrf_token %}
-                <div class="mb-3">
-                    {{ add_player_form.player.label_tag }}
-                    {{ add_player_form.player }}
-                </div>
-                <div class="mb-3">
-                    {{ add_player_form.number.label_tag }}
-                    {{ add_player_form.number }}
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Добавить в состав</button>
-            </form>
+            {% if team.owner == request.user %}
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ add_player_form.player.label_tag }}
+                        {{ add_player_form.player }}
+                    </div>
+                    <div class="mb-3">
+                        {{ add_player_form.number.label_tag }}
+                        {{ add_player_form.number }}
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Добавить в состав</button>
+                </form>
+            {% else %}
+                <p class="text-muted mt-3 mb-0">Только владелец команды может добавлять игроков.</p>
+            {% endif %}
             <hr>
             <small class="text-muted">
                 Не нашли нужного игрока? Сначала <a href="{% url 'players:list' %}">создайте его в глобальной базе игроков</a>.
@@ -47,6 +69,9 @@
                             <tr>
                                 <th style="width: 80px;">№</th>
                                 <th>Имя и Фамилия игрока</th>
+                                {% if team.owner == request.user %}
+                                    <th class="text-end" style="width: 100px;">Действия</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -54,6 +79,16 @@
                                 <tr>
                                     <td><span class="badge bg-primary fs-6">#{{ tp.number }}</span></td>
                                     <td><strong>{{ tp.player.name }}</strong></td>
+                                    {% if team.owner == request.user %}
+                                        <td class="text-end">
+                                            <form action="{% url 'teams:remove_player' team.id tp.id %}" method="post" class="d-inline" onsubmit="return confirm('Убрать игрока &quot;{{ tp.player.name|escapejs }}&quot; из состава?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Убрать из состава">
+                                                    Удалить
+                                                </button>
+                                            </form>
+                                        </td>
+                                    {% endif %}
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -65,4 +100,20 @@
         </div>
     </div>
 </div>
+
+<!-- JS для живого поиска по списку -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const playerSelect = document.getElementById("{{ add_player_form.player.id_for_label }}");
+        if (playerSelect) {
+            new TomSelect(playerSelect, {
+                create: false,
+                sortField: { field: "text", direction: "asc" },
+                placeholder: "Введите ФИО игрока...",
+                plugins: ['dropdown_input']
+            });
+        }
+    });
+</script>
 {% endblock %}

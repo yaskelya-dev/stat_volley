@@ -26,16 +26,32 @@
             {% if teams %}
                 <div class="list-group mt-3">
                     {% for team in teams %}
-                        <a href="{% url 'teams:detail' team.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
-                                <strong class="fs-5">{{ team.name }}</strong>
+                                <a href="{% url 'teams:detail' team.id %}" class="text-decoration-none text-reset">
+                                    <strong class="fs-5">{{ team.name }}</strong>
+                                </a>
                                 <br>
                                 <small class="text-muted">Игроков в составе: {{ team.players.count }}</small>
                             </div>
-                            <span class="badge bg-secondary">
-                                {% if team.owner == request.user %}Моя команда{% else %}Команда друга ({{ team.owner.username }}){% endif %}
-                            </span>
-                        </a>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary">
+                                    {% if team.owner == request.user %}Моя команда{% else %}Команда друга ({{ team.owner.username }}){% endif %}
+                                </span>
+
+                                {% if team.owner == request.user %}
+                                    <a href="{% url 'teams:update' team.id %}" class="btn btn-sm btn-outline-primary" title="Изменить">
+                                        Изменить
+                                    </a>
+                                    <form action="{% url 'teams:delete' team.id %}" method="post" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите удалить команду &quot;{{ team.name|escapejs }}&quot;?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
+                                            Удалить
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
                     {% endfor %}
                 </div>
             {% else %}

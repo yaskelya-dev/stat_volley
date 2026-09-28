@@ -1,3 +1,27 @@
 .navbar-brand {
     letter-spacing: 0.5px;
 }
+
+/* Основной текст контроля, инпута и выпадающего списка */
+.ts-control, .ts-control input, .ts-dropdown {
+    color: var(--bs-body-color) !important;
+    background-color: var(--bs-body-bg) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Цвет плейсхолдера */
+.ts-control input::placeholder {
+    color: var(--bs-secondary-color) !important;
+    opacity: 0.7;
+}
+
+/* Элементы выпадающего списка */
+.ts-dropdown .option {
+    color: var(--bs-body-color) !important;
+}
+
+/* Подсветка элементов при наведении / выборе */
+.ts-dropdown .active {
+    background-color: var(--bs-tertiary-bg) !important;
+    color: var(--bs-body-color) !important;
+}

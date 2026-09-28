@@ -1,15 +1,16 @@
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from score.models import Friendship
+from users.decorators import login_required_message
 from .forms import AddPlayerToTeamForm, TeamForm
 from .models import Team, TeamPlayer
 
 
-@login_required
+@login_required_message(redirect_after_login='teams:list')
 def team_list_create(request):
-    """Список доступных команд (свои + команды друзей) и форма создания своей команды"""
     if request.method == "POST":
         form = TeamForm(request.POST)
         if form.is_valid():
@@ -36,9 +37,8 @@ def team_list_create(request):
     )
 
 
-@login_required
+@login_required_message()
 def team_detail(request, team_id):
-    """Детальная страница команды: просмотр состава и добавление игроков с номерами"""
     team = get_object_or_404(Team, id=team_id)
 
     # Проверка прав доступа (владелец или друг)
@@ -52,6 +52,10 @@ def team_detail(request, team_id):
             return redirect("teams:list")
 
     if request.method == "POST":
+        # Только владелец может добавлять игроков
+        if team.owner != request.user:
+            return redirect("teams:detail", team_id=team.id)
+
         add_player_form = AddPlayerToTeamForm(
             request.POST, team=team
         )
@@ -79,3 +83,39 @@ def team_detail(request, team_id):
             "add_player_form": add_player_form,
         },
     )
+
+
+@login_required
+def team_update(request, team_id):
+    team = get_object_or_404(Team, id=team_id, owner=request.user)
+
+    if request.method == "POST":
+        form = TeamForm(request.POST, instance=team)
+        if form.is_valid():
+            form.save()
+            return redirect("teams:detail", team_id=team.id)
+    else:
+        form = TeamForm(instance=team)
+
+    return render(
+        request,
+        "teams/team_edit.html",
+        {"team": team, "form": form},
+    )
+
+
+@login_required
+@require_POST
+def team_delete(request, team_id):
+    team = get_object_or_404(Team, id=team_id, owner=request.user)
+    team.delete()
+    return redirect("teams:list")
+
+
+@login_required
+@require_POST
+def remove_player_from_team(request, team_id, tp_id):
+    team = get_object_or_404(Team, id=team_id, owner=request.user)
+    team_player = get_object_or_404(TeamPlayer, id=tp_id, team=team)
+    team_player.delete()
+    return redirect("teams:detail", team_id=team.id)
