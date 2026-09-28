@@ -1,5 +1,5 @@
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from users.decorators import login_required_message
 from .forms import PlayerForm
@@ -29,3 +29,29 @@ def player_list_create(request):
         "players/player_list.html",
         context,
     )
+
+
+@login_required_message(redirect_after_login='players:list')
+def player_edit(request, pk):
+    player = get_object_or_404(Player, pk=pk)
+    if request.method == "POST":
+        form = PlayerForm(request.POST, instance=player)
+        if form.is_valid():
+            form.save()
+            return redirect("players:list")
+    else:
+        form = PlayerForm(instance=player)
+
+    return render(
+        request,
+        "players/player_edit.html",
+        {"form": form, "player": player}
+    )
+
+
+@login_required_message(redirect_after_login='players:list')
+@require_POST
+def player_delete(request, pk):
+    player = get_object_or_404(Player, pk=pk)
+    player.delete()
+    return redirect("players:list")
