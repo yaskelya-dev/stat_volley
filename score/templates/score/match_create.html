@@ -3,10 +3,89 @@
 {% block title %}Создание матча - StatVolley{% endblock %}
 
 {% block content %}
-    <h2>Создать новый матч</h2>
-    <form method="post" class="col-md-6 mt-3">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-primary w-100">Начать матч</button>
-    </form>
+<div class="container py-2">
+    <!-- Кнопка Назад -->
+    <div class="mb-3">
+        <a href="{% url 'score:index' %}" class="btn btn-outline-secondary btn-sm">
+            &larr; Назад к статистике
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border rounded-3">
+                <div class="card-header bg-body-tertiary py-3 border-bottom">
+                    <h3 class="card-title h5 mb-0 fw-bold">Создать новый матч</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Неполевые ошибки формы (при наличии) -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-3">
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Рендеринг полей формы с поддержкой стилей Bootstrap -->
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                    {{ field.label }}
+                                </label>
+
+                                {# Добавляем класс form-control / form-select если в forms.py они не прописаны #}
+                                {% if field.field.widget.input_type == "select" %}
+                                    {{ field }}
+                                {% else %}
+                                    {{ field }}
+                                {% endif %}
+
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+
+                                {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in field.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fs-6">
+                                Начать матч &rarr;
+                            </button>
+                            <a href="{% url 'score:index' %}" class="btn btn-light border btn-lg fs-6">
+                                Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Автоматическое добавление Bootstrap-классов к виджетам формы, если они не заданы в forms.py
+    document.addEventListener("DOMContentLoaded", function() {
+        const formInputs = document.querySelectorAll('.card-body form input, .card-body form select, .card-body form textarea');
+        formInputs.forEach(input => {
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                input.classList.add('form-check-input');
+            } else if (input.tagName.toLowerCase() === 'select') {
+                input.classList.add('form-select');
+            } else {
+                input.classList.add('form-control');
+            }
+        });
+    });
+</script>
 {% endblock %}

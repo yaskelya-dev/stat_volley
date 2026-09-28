@@ -1,0 +1,37 @@
+{% if player %}
+    <!-- ИГРОК НАЗНАЧЕН В ЗОНУ -->
+    <div class="player-node text-center user-select-none shadow-sm position-relative"
+         onclick="openActionModal('{{ player.id }}', '{{ player.name|escapejs }}')"
+         title="{{ zone_name }}: {{ player.name }}">
+
+        <!-- Значок подачи (отображается в Зоне 1, если подаем мы) -->
+        {% if is_server and current_set.serving_team == 'HOME' %}
+            <span class="server-badge position-absolute top-0 translate-middle-y shadow-sm" style="font-size: 0.65rem;">
+                🏐 Подача
+            </span>
+        {% endif %}
+
+        <!-- Игровой номер -->
+        <span class="fw-bold fs-3 text-dark lh-1">#{{ player.number }}</span>
+
+        <!-- Имя и фамилия игрока (обрезается, если слишком длинное) -->
+        <span class="fw-semibold text-truncate px-2 w-100 text-dark lh-sm mt-1" style="font-size: 0.75rem;">
+            {{ player.name }}
+        </span>
+
+        <!-- Бейдж с номером зоны снизу -->
+        <span class="badge bg-light text-secondary border position-absolute bottom-0 mb-1" style="font-size: 0.55rem; opacity: 0.85;">
+            {{ zone_name }}
+        </span>
+    </div>
+{% else %}
+    <!-- ПУСТАЯ ЗОНА (ОЖИДАЕТ РАССТАНОВКИ) -->
+    <div class="player-node empty text-center user-select-none shadow-sm"
+         onclick="openSelectPlayerModal('{{ zone_code }}', '{{ zone_name }}')"
+         title="Нажмите, чтобы выбрать игрока для {{ zone_name }}">
+
+        <span class="fs-4 text-muted lh-1 mb-1">+</span>
+        <span class="fw-bold text-secondary small lh-sm">{{ zone_name }}</span>
+        <span class="text-muted" style="font-size: 0.65rem;">Выбрать</span>
+    </div>
+{% endif %}

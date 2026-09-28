@@ -3,13 +3,102 @@
 {% block title %}Статистика - StatVolley{% endblock %}
 
 {% block content %}
-<div class="p-4 bg-body-tertiary rounded-3 border">
-    <h2>Ведение счёта</h2>
-    <p class="lead">Добро пожаловать, <strong>{{ request.user.username }}</strong>!</p>
-    <p>В данной статистике учитываются только забитые мячи</p>
+<div class="container py-2">
+    <!-- Приветственный Hero-блок -->
+    <div class="p-5 mb-4 bg-body-tertiary rounded-3 border shadow-sm">
+        <div class="container-fluid py-2">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h1 class="display-5 fw-bold mb-2">Ведение счёта и статистики</h1>
+                    <p class="col-md-9 fs-5 text-muted">
+                        Добро пожаловать, <strong>{{ request.user.username }}</strong>! Отслеживайте забитые мячи, партии и ключевые игровые события в реальном времени.
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'score:match_create' %}" class="btn btn-primary btn-lg px-4 gap-3 shadow-sm">
+                        Создать новый матч
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <a href="{% url 'score:match_create' %}">Создать матч</a>
+    <div class="row g-4">
+        <!-- Левая колонка: Информационные карточки -->
+        <div class="col-lg-4">
+            <div class="card border shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3">Как это работает?</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3 d-flex align-items-start">
+                            <span class="badge bg-primary rounded-circle me-3 p-2">1</span>
+                            <div>
+                                <strong>Создайте матч</strong>
+                                <div class="text-muted small">Укажите команды, дату и формат игры.</div>
+                            </div>
+                        </li>
+                        <li class="mb-3 d-flex align-items-start">
+                            <span class="badge bg-primary rounded-circle me-3 p-2">2</span>
+                            <div>
+                                <strong>Ведите счёт Live</strong>
+                                <div class="text-muted small">Фиксируйте забитые очки и ошибки игроков по ходу сета.</div>
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-start">
+                            <span class="badge bg-primary rounded-circle me-3 p-2">3</span>
+                            <div>
+                                <strong>Анализируйте</strong>
+                                <div class="text-muted small">Получайте готовую статистику после завершения игры.</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
+        <!-- Правая колонка: Список последних матчей -->
+        <div class="col-lg-8">
+            <div class="card border shadow-sm h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-3">
+                    <h5 class="card-title fw-bold mb-0">Последние матчи</h5>
+                    <a href="{% url 'score:match_create' %}" class="btn btn-sm btn-outline-primary">
+                        Новый матч
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_matches %}
+                        <div class="list-group list-group-flush">
+                            {% for match in recent_matches %}
+                                <a href="{% url 'score:match_live' match.id %}" class="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold mb-1">
+                                            {% if match.team_a and match.team_b %}
+                                                {{ match.team_a.name }} <span class="text-muted px-1">VS</span> {{ match.team_b.name }}
+                                            {% else %}
+                                                Матч #{{ match.id }}
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">
+                                            {% if match.created_at %}{{ match.created_at|date:"d.m.Y H:i" }}{% else %}Создан недавно{% endif %}
+                                        </small>
+                                    </div>
+                                    <span class="btn btn-sm btn-light border">
+                                        Открыть табло &rarr;
+                                    </span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <p class="mb-3">У вас пока нет сохранённых или активных матчей.</p>
+                            <a href="{% url 'score:match_create' %}" class="btn btn-sm btn-primary">
+                                Начать первый матч
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
 {% endblock %}

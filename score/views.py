@@ -9,7 +9,12 @@ from users.decorators import login_required_message
 
 @login_required_message(redirect_after_login='score:index')
 def index(request):
-    return render(request, 'score/index.html')
+    recent_matches = Match.objects.order_by("-created_at")[:5] if hasattr(Match, 'created_at') else Match.objects.all()[
+        :5]
+
+    return render(request, 'score/index.html', {
+        'recent_matches': recent_matches
+    })
 
 
 def match_create(request):
